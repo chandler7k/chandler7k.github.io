@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+  
+  <entry>
+    <title>2020年度总结</title>
+    <link href="undefined2020/12/30/2020-summary/"/>
+    <url>2020/12/30/2020-summary/</url>
+    
+    <content type="html"><![CDATA[<h2 id="没有什么回忆起来怦然心动的。"><a href="#没有什么回忆起来怦然心动的。" class="headerlink" title="没有什么回忆起来怦然心动的。"></a>没有什么回忆起来怦然心动的。</h2>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>生活</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Why metaclass?</title>
+    <link href="undefined2020/06/24/why-metaclass/"/>
+    <url>2020/06/24/why-metaclass/</url>
+    
+    <content type="html"><![CDATA[<h1 id="Why-metaclass"><a href="#Why-metaclass" class="headerlink" title="Why  metaclass?"></a>Why  metaclass?</h1><p>翻了一些源码和类似的博客，得到的结论大致可以总结如下：</p><p>Smalltalk 与面向对象的结合，关心的是实现的功能而不是关注类本身，本质上向对象发送消息的方案是统一的，实现方面：存储方法的方法列表，和消息发送的时候查询方法的方案，在实例对象和类对象上复用，所以搞出meta class，满足msgsend在实例对象和类对象上都可以使用。</p><p>从<code>msgsend</code>本质去看，<code>msgsend</code>调用之后，最终会走<code>_class_lookupMethodAndLoadCache3</code>方法并调用<code>lookUpImpOrForward</code>，<code>lookUpImpOrForward</code>就是走我们常常提起的那一套消息转发逻辑。</p><pre><code class="c">IMP lookUpImpOrForward(Class cls, SEL sel, id inst,                        bool initialize, bool cache, bool resolver){    ///    // Try this class&#39;s cache.    imp = cache_getImp(cls, sel);    if (imp) goto done;    // Try this class&#39;s method lists.    {        Method meth = getMethodNoSuper_nolock(cls, sel);        if (meth) {            log_and_fill_cache(cls, meth-&gt;imp, sel, inst, cls);            imp = meth-&gt;imp;            goto done;        }    }    // Try superclass caches and method lists.    {        unsigned attempts = unreasonableClassCount();        for (Class curClass = cls-&gt;superclass;             curClass != nil;             curClass = curClass-&gt;superclass)        {            // Halt if there is a cycle in the superclass chain.            if (--attempts == 0) {                _objc_fatal(&quot;Memory corruption in class list.&quot;);            }            // Superclass cache.            imp = cache_getImp(curClass, sel);            if (imp) {                if (imp != (IMP)_objc_msgForward_impcache) {                    // Found the method in a superclass. Cache it in this class.                    log_and_fill_cache(cls, imp, sel, inst, curClass);                    goto done;                }                else {                    // Found a forward:: entry in a superclass.                    // Stop searching, but don&#39;t cache yet; call method                     // resolver for this class first.                    break;                }            }            // Superclass method list.            Method meth = getMethodNoSuper_nolock(curClass, sel);            if (meth) {                log_and_fill_cache(cls, meth-&gt;imp, sel, inst, curClass);                imp = meth-&gt;imp;                goto done;            }        }    }    // No implementation found. Try method resolver once.    if (resolver  &amp;&amp;  !triedResolver) {        runtimeLock.unlock();        _class_resolveMethod(cls, sel, inst);        runtimeLock.lock();        // Don&#39;t cache the result; we don&#39;t hold the lock so it may have         // changed already. Re-do the search from scratch instead.        triedResolver = YES;        goto retry;    }    // No implementation found, and method resolver didn&#39;t help.     // Use forwarding.    imp = (IMP)_objc_msgForward_impcache;    cache_fill(cls, sel, imp, inst); done:    runtimeLock.unlock();    return imp;}</code></pre><p><img src="https://i.loli.net/2019/02/14/5c64dbea06553.png" srcset="/img/loading.gif" alt=""></p><p>OC对象的本质，实例对象和类对象都是<code>objc_class</code>对象，实例对象的<code>isa</code>指针指向类对象，类对象存储的是实例对象的<code>methodlist</code> <code>ivarlist</code> <code>propertylist</code> <code>cachelist</code>，如果我们不使用<code>metaClass</code>，而是给类对象单独设计一套<code>classMethodList</code>，那么类对象就需要添加一个<code>classMethodList</code>和<code>classMethodCacheList</code>，<code>msgSend</code>方法也要单独对类方法做一套查找和缓存的方案，同时<code>msgSend</code>在接受<code>cls</code>的时候需要区分<code>cla</code>究竟是类对象还是实例对象，或者单独设计一个<code>msgSendClass</code>方法来实现给类对象发送消息。</p><p>使用<code>metaClass</code>，就无需再去新增<code>classMethod</code>和<code>classMethodCacheList</code>，并且可以将<code>msgSend</code>这一个机制直接复用用到类对象。这里可能还有一点类型擦除的意思，可以忽略掉对象类型和方法类型，在消息发送时都按照一个逻辑去处理，提高效率。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>iOS</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>iOS</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>2019总结</title>
+    <link href="undefined2019/12/20/2019-summary/"/>
+    <url>2019/12/20/2019-summary/</url>
+    
+    <content type="html"><![CDATA[<h1 id="2019年度总结"><a href="#2019年度总结" class="headerlink" title="2019年度总结"></a>2019年度总结</h1><h2 id="读书"><a href="#读书" class="headerlink" title="读书"></a>读书</h2><p>一共读完9本书，其中 6 本非技术书籍，3 本技术书籍。</p><ul><li><input disabled="" type="checkbox"> 12 Rules for Life ⭐️⭐️<br>Dr.J.P巨作了，英文版读了一半，不错</li><li><input disabled="" type="checkbox"> 软技能 ⭐️⭐️⭐️⭐️⭐️<br>临近2019年末发现的一本书，讲的非常好，大部分内容都能在业内的专业人士身上看到。</li><li><input checked="" disabled="" type="checkbox"> 被讨厌的勇气⭐️<br>阿德乐思想心理学，和弗洛伊德、荣格的理论相反，阿德乐认为并不是外界因素决定了你，只有你能决定你，可是后半部分共同体理论又存在冲突。但总体不错。</li><li><input checked="" disabled="" type="checkbox"> 番茄工作法图解⭐️</li><li><input checked="" disabled="" type="checkbox"> 黑客与画家⭐️</li><li><input checked="" disabled="" type="checkbox"> 世界尽头咖啡馆⭐️<br>解压</li><li><input checked="" disabled="" type="checkbox"> 重塑自我：如何做一个很幸福的人⭐️<br>帮助我度过了一段黑暗时光</li><li><input checked="" disabled="" type="checkbox"> 笑场<br>前半部分还好，后半部分怪怪的</li><li><input checked="" disabled="" type="checkbox"> Objective-C 编程全解</li><li><input checked="" disabled="" type="checkbox"> Effective Objective-C</li><li><input checked="" disabled="" type="checkbox"> Objective-C 高级编程</li><li><input disabled="" type="checkbox"> SICP</li><li><input disabled="" type="checkbox"> 汇编语言，王爽</li><li><input disabled="" type="checkbox"> Web开发权威指南</li><li><input disabled="" type="checkbox"> macOS开发指南</li></ul><h2 id="工作"><a href="#工作" class="headerlink" title="工作"></a>工作</h2><p>毕业后来到了现在这家公司，传统行业氛围还是比较重的，内部政治混乱，没多少技术沉淀和技术氛围，很少人是真心地想要解决问题。</p><h2 id="技术"><a href="#技术" class="headerlink" title="技术"></a>技术</h2><p>目前还是 iOS 开发，下半年看了些 Web 和 Mac OS 开发的书，Flutter 也看了些。感觉目前跨平台来说，Flutter 还是有很长的路要走。</p><h2 id="身体"><a href="#身体" class="headerlink" title="身体"></a>身体</h2><p>10 月份之前还是能保持每周跑步 20 公里（5 公里一次，一周 4 次），10 月后需求越来越多了，11月还有一些，12 月每天加班到凌晨，没有运动，同时健康也出了问题，药疼，胸口疼，嗓子疼。</p><h2 id="经济"><a href="#经济" class="headerlink" title="经济"></a>经济</h2><p>小打小闹，10% 的收益，很低，本金也低。</p><h2 id="2020的展望"><a href="#2020的展望" class="headerlink" title="2020的展望"></a>2020的展望</h2><ul><li>通过公众号和博客开始打造个人品牌，一个月至少有一篇文章</li><li>保持阅读习惯，不少于 10 本非技术书和5本技术书籍，保持阅读博客的习惯，加强总结。</li><li>学习投资，收益提高上去。</li><li>体脂回归到 18 以下</li><li>换个好公司吧</li></ul>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>生活</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>关于C++ size_t</title>
+    <link href="undefined2019/10/27/c-size-t/"/>
+    <url>2019/10/27/c-size-t/</url>
+    
+    <content type="html"><![CDATA[<h1 id="C-C-size-t"><a href="#C-C-size-t" class="headerlink" title="C/C++ size_t"></a>C/C++ size_t</h1><h1 id="Why-size-t-matters"><a href="#Why-size-t-matters" class="headerlink" title="Why size_t matters"></a>Why size_t matters</h1><p><a href="http://web.archive.org/web/20101209143037/http://www.eetimes.com/discussion/programming-pointers/4026076/Why-size-t-matters" target="_blank" rel="noopener">http://web.archive.org/web/20101209143037/http://www.eetimes.com/discussion/programming-pointers/4026076/Why-size-t-matters</a>?<br>可移植性、有效性、可读性</p><h1 id="memcpy"><a href="#memcpy" class="headerlink" title="memcpy"></a>memcpy</h1><p>用这个方法来说明一下。</p><h3 id="int"><a href="#int" class="headerlink" title="int"></a>int</h3><pre><code class="c">void memcpy(void *s1, void const *s2, int n);</code></pre><p>首先考虑int，int 是有符号类型，而size是不能为负数的，所以int不能作为memcpy的第三个参数类型。<br>unsigned int的<strong>正数范围</strong>一般比int大2倍，但两者的大小是一样的的。移动unsigned int的花销与int的花销一样大，因为即使int的大小随着不同的C实现版本变化，但是unsigned int 与int的大小是一样的，所以移动unsigned int 的花销与int是相同的。</p><h3 id="unsigned-int"><a href="#unsigned-int" class="headerlink" title="unsigned int"></a>unsigned int</h3><pre><code class="c">void memcpy(void *s1, void const *s2, unsigned int n);</code></pre><p>使 用unsigned int 来做类型是很好的方案，但也只能在IP16或者IP32这种int和指针大小相同的。<br>然而在I16LP32上unsigned int就不行了，比如在一些处理器上，可能需要拷贝的数大于2^16，第三个参数n hold不住比这大的数。</p><h3 id="unsigned-long"><a href="#unsigned-long" class="headerlink" title="unsigned long"></a>unsigned long</h3><pre><code class="c">void memcpy(void *s1, void const *s2, unsigned long n);</code></pre><p>使用unsigned long效率会变慢，在C标准中unsigned long至少占用32位，在IP16中平台上，通常unsigned long这种32位的类型需要两个16位去组成，所以移动32位类型的数据也需要两条机器指令，每条移动16位，这种花销太大的操作是我们不想看到的。</p><h3 id="size-t"><a href="#size-t" class="headerlink" title="size_t"></a>size_t</h3><p>size_t相当于无符号类型的一种别名，比如unsigned int ,unsigned long 甚至unsigned long long 。<strong>每种C平台会选择合适的大小来表示最大对象的大小</strong>。<br>size_t类型一般由sizeof产出。<br>使用size_t类型一定程度能充当文档的作用，这回告诉你这个参数是表示字节大小或者索引，而不是一般的算数运算值。</p><h1 id="C数据模型记号法"><a href="#C数据模型记号法" class="headerlink" title="C数据模型记号法"></a>C数据模型记号法</h1><p>关于IP16 I16LL32P64这种记号法则，有人总结出来的，也没有一个正统的文献来说明这一点。一般的记号法采用：</p><pre><code>I n L n LL n P n</code></pre><p>这种记号，n代表位数大小，I代表整形，L代表Long， LL代表Long Long，P代表指向数据的指针（不包括指向函数的指针）。类型的顺序不能颠倒，必须为ILLLP的生序顺序。<br>如果有两种连续类型的位数大小n相同，则可以连起来写，比如IL32LL64P32代表Int和Long为32位，Long Long 64位，P32位。因为类型升序，所以P必须在LL后面分开。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>C++</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>C++</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Swift Objective-C 桥接</title>
+    <link href="undefined2019/01/03/swift-oc-bridge/"/>
+    <url>2019/01/03/swift-oc-bridge/</url>
+    
+    <content type="html"><![CDATA[<h1 id="Swift和Objective-C交互"><a href="#Swift和Objective-C交互" class="headerlink" title="Swift和Objective-C交互"></a>Swift和Objective-C交互</h1><h1 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h1><p>在Swift中调用OC初始化方法，需要用Swift的初始化方式来调用，OC中的初始化多以init开头，如果带有参数，则会经常是initWith为前缀，Swift中，init会变成Swift初始化方法，如果带有参数，则会省略With，其他视情况而定<br>OC：</p><pre><code class="objc">- (instancetype)init;- (instancetype)initWithFrame:(CGRect)frame style:(UITableViewStyle)style;</code></pre><p>Swift:</p><pre><code class="swift">init() { /* ... */ }init(frame: CGRect, style: UITableViewStyle) { /* ... */ }</code></pre><h1 id="可失败的初始化方法"><a href="#可失败的初始化方法" class="headerlink" title="可失败的初始化方法"></a>可失败的初始化方法</h1><p>首先讲一下Swift的一个特性： 可选值</p><h2 id="Optional-value"><a href="#Optional-value" class="headerlink" title="Optional value"></a>Optional value</h2><p>Optional value可选值是Swift的一个特性，Swift中只有可选类型可以为nil，</p><pre><code>//this workvar canBeNil : Int? = 4canBeNil = nil//this not workvar cantBeNil : Int = 4cantBeNil = nil // can&#39;t do this</code></pre><p>如果要从一个可选值中取值，就必须解包（unwrap），</p><pre><code>var canBeNil : Int? = 4println(canBeNil!)</code></pre><p>或者直接将可选类型的?更改为!，可以实现自动解包</p><pre><code>var canBeNil : Int! = 4print(canBeNil) // no unwrapping needed</code></pre><p>如果你编写的OC初始化方法没有加特别处理，那么Swift会默认将所引入的OC引用视为隐式解包的可选值类型，这就需要在初始化后添加?或者!，然而!这种写法在Swift的规则中是非常不推荐，如果初始化失败，那么会造成运行时错误。<br>而且在大型项目中引用OC编写的依赖，Xcode可能无法自动添加?来完成隐式解包，所以在不了解这一个坑的情况下容易出现初始化报错，也可能在单例模式下出现optional chaining报错，只能手动添加?或 !来进行解包，或者进行optioanl binding。</p><pre><code>@interface Robot : NSObject@property (copy,readonly) NSString *name;- (instancetype)initWithName:(NSString *)name;- (NSString *)tellMeSomething;@end</code></pre><p>然后在Xcode中将这个类引用到Swift中，然后在interface中查看，这个类会被映射为：</p><pre><code>public class Robot : NSObject {      public var name: String! { get }  public init!(name: String!)  public func tellMeSomething() -&gt; String!}</code></pre><p>在OC中，初始化方法返回nil是常见的情况，但是Swift引入了可选值机制，只有可选值可以为nil，所以Swift的初始化方法只能返回一个必定存在的值或者可选值。</p><h1 id="可空性"><a href="#可空性" class="headerlink" title="可空性"></a>可空性</h1><p>其实很简单：</p><ul><li>标记为<code>nonnull</code>， Swift会将其映射为正常类型</li><li>标记为<code>nullable</code>， Swift会将其映射为正常类型</li></ul><h2 id="属性"><a href="#属性" class="headerlink" title="属性"></a>属性</h2><p>在OC中：</p><pre><code>@property (nonnull,copy,readonly) NSString *name;</code></pre><p>那么Swift映射就是</p><pre><code>public var name: String { get }</code></pre><h2 id="初始化方法"><a href="#初始化方法" class="headerlink" title="初始化方法"></a>初始化方法</h2><p>OC:</p><pre><code>- (nullable instancetype)initWithName:(nonnull NSString *)name;</code></pre><p>Swift:</p><pre><code>public init?(name: String)</code></pre><h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><p>其实初始化方法和函数是一样的,OC</p><pre><code>- (nullable NSString *)tellMeSomething;</code></pre><p>Swift</p><pre><code>public func tellMeSomething() -&gt; String?</code></pre><h1 id="快速简洁高效的方法"><a href="#快速简洁高效的方法" class="headerlink" title="快速简洁高效的方法"></a>快速简洁高效的方法</h1><p>如果说在OC大部分属性和方法在映射Swift时需要为正常类型，仅有少部分为可为空的可选类型，那么每次添加可空性关键字未免太过麻烦，这里可以添加一个作用域：<code>NS_ASSUME_NONNULL_BEGIN</code>和 <code>NS_ASSUME_NONNULL_END</code></p><pre><code>NS_ASSUME_NONNULL_BEGIN@interface Robot : NSObject@property (copy,readonly) NSString *name; //不为空- (nullable instancetype)initWithName:(NSString *)name; //初始化可失败- (nullable NSString *)tellMeSomething; //返回值可为空@endNS_ASSUME_NONNULL_END</code></pre><p>对应Swift映射</p><pre><code>public class Robot : NSObject {  public var name: String { get }  public init?(name: String)  public func tellMeSomething() -&gt; String?}</code></pre><h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a href="https://useyourloaf.com/blog/using-nullable-to-annotate-objective-c/" target="_blank" rel="noopener">Using nullable to annotate Objective-C code</a><br><a href="https://developer.apple.com/swift/blog/?id=25" target="_blank" rel="noopener">Nullability and Objective-C - Swift Blog - Apple Developer</a><br><a href="https://blog.csdn.net/txz_gray/article/details/54406298" target="_blank" rel="noopener">Objective-C中nullable、__nullable、_Nullable、_Nonnull的用法 - txz_gray的博客 - CSDN博客</a><br><a href="https://www.jianshu.com/p/2ea9c3f737ea" target="_blank" rel="noopener">关于OC中的nil, NULL详解 - 简书</a><br><a href="https://www.jianshu.com/p/742c6af3afae" target="_blank" rel="noopener">Swift和Objective-C混编 - 简书</a><br><a href="https://blog.csdn.net/yingBi2014/article/details/80093102" target="_blank" rel="noopener">Swift项目中使用OC混编—创建桥接文件和使用Cocoapods设置User Header Search Paths - 硬币2014 - CSDN博客</a><br><a href="https://www.jianshu.com/p/0646f064d27c" target="_blank" rel="noopener">如何在 Swift 项目中使用 OC 的第三方开源库 - 简书</a><br><a href="https://blog.csdn.net/top_roboo/article/details/50250785" target="_blank" rel="noopener">https://blog.csdn.net/top_roboo/article/details/50250785</a></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>iOS</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>iOS</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  
+</search>

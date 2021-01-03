@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  <title>Swift Objective-C 桥接 ~ Linlin&#39;s Blog</title>
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+  <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+  <link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+  <link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+  <link rel="stylesheet" href="https://at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+  
+    <link rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css"  >
+  
+  <link rel="stylesheet" href="/css/main.css"  >
+
+  
+</head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Linlin&#39;s Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('https://i.loli.net/2019/10/27/UB8NTr4vuEJ76xg.jpg')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              <p class="mt-3">星期四, 一月 3日 2019, 10:45 晚上</p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto">
+          <div class="markdown-body">
+            <h1 id="Swift和Objective-C交互"><a href="#Swift和Objective-C交互" class="headerlink" title="Swift和Objective-C交互"></a>Swift和Objective-C交互</h1><h1 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h1><p>在Swift中调用OC初始化方法，需要用Swift的初始化方式来调用，OC中的初始化多以init开头，如果带有参数，则会经常是initWith为前缀，Swift中，init会变成Swift初始化方法，如果带有参数，则会省略With，其他视情况而定<br>OC：</p>
+<pre><code class="objc">- (instancetype)init;
+- (instancetype)initWithFrame:(CGRect)frame style:(UITableViewStyle)style;</code></pre>
+<p>Swift:</p>
+<pre><code class="swift">init() { /* ... */ }
+init(frame: CGRect, style: UITableViewStyle) { /* ... */ }</code></pre>
+<h1 id="可失败的初始化方法"><a href="#可失败的初始化方法" class="headerlink" title="可失败的初始化方法"></a>可失败的初始化方法</h1><p>首先讲一下Swift的一个特性： 可选值</p>
+<h2 id="Optional-value"><a href="#Optional-value" class="headerlink" title="Optional value"></a>Optional value</h2><p>Optional value可选值是Swift的一个特性，Swift中只有可选类型可以为nil，</p>
+<pre><code>//this work
+var canBeNil : Int? = 4
+canBeNil = nil
+//this not work
+var cantBeNil : Int = 4
+cantBeNil = nil // can&#39;t do this</code></pre><p>如果要从一个可选值中取值，就必须解包（unwrap），</p>
+<pre><code>var canBeNil : Int? = 4
+println(canBeNil!)</code></pre><p>或者直接将可选类型的?更改为!，可以实现自动解包</p>
+<pre><code>var canBeNil : Int! = 4
+print(canBeNil) // no unwrapping needed</code></pre><p>如果你编写的OC初始化方法没有加特别处理，那么Swift会默认将所引入的OC引用视为隐式解包的可选值类型，这就需要在初始化后添加?或者!，然而!这种写法在Swift的规则中是非常不推荐，如果初始化失败，那么会造成运行时错误。<br>而且在大型项目中引用OC编写的依赖，Xcode可能无法自动添加?来完成隐式解包，所以在不了解这一个坑的情况下容易出现初始化报错，也可能在单例模式下出现optional chaining报错，只能手动添加?或 !来进行解包，或者进行optioanl binding。</p>
+<pre><code>@interface Robot : NSObject
+@property (copy,readonly) NSString *name;
+- (instancetype)initWithName:(NSString *)name;
+- (NSString *)tellMeSomething;
+@end</code></pre><p>然后在Xcode中将这个类引用到Swift中，然后在interface中查看，这个类会被映射为：</p>
+<pre><code>public class Robot : NSObject {    
+  public var name: String! { get }
+  public init!(name: String!)
+  public func tellMeSomething() -&gt; String!
+}</code></pre><p>在OC中，初始化方法返回nil是常见的情况，但是Swift引入了可选值机制，只有可选值可以为nil，所以Swift的初始化方法只能返回一个必定存在的值或者可选值。</p>
+<h1 id="可空性"><a href="#可空性" class="headerlink" title="可空性"></a>可空性</h1><p>其实很简单：</p>
+<ul>
+<li>标记为<code>nonnull</code>， Swift会将其映射为正常类型</li>
+<li>标记为<code>nullable</code>， Swift会将其映射为正常类型</li>
+</ul>
+<h2 id="属性"><a href="#属性" class="headerlink" title="属性"></a>属性</h2><p>在OC中：</p>
+<pre><code>@property (nonnull,copy,readonly) NSString *name;</code></pre><p>那么Swift映射就是</p>
+<pre><code>public var name: String { get }</code></pre><h2 id="初始化方法"><a href="#初始化方法" class="headerlink" title="初始化方法"></a>初始化方法</h2><p>OC:</p>
+<pre><code>- (nullable instancetype)initWithName:(nonnull NSString *)name;</code></pre><p>Swift:</p>
+<pre><code>public init?(name: String)</code></pre><h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><p>其实初始化方法和函数是一样的,OC</p>
+<pre><code>- (nullable NSString *)tellMeSomething;</code></pre><p>Swift</p>
+<pre><code>public func tellMeSomething() -&gt; String?</code></pre><h1 id="快速简洁高效的方法"><a href="#快速简洁高效的方法" class="headerlink" title="快速简洁高效的方法"></a>快速简洁高效的方法</h1><p>如果说在OC大部分属性和方法在映射Swift时需要为正常类型，仅有少部分为可为空的可选类型，那么每次添加可空性关键字未免太过麻烦，这里可以添加一个作用域：<code>NS_ASSUME_NONNULL_BEGIN</code>和 <code>NS_ASSUME_NONNULL_END</code></p>
+<pre><code>NS_ASSUME_NONNULL_BEGIN
+@interface Robot : NSObject
+@property (copy,readonly) NSString *name; //不为空
+- (nullable instancetype)initWithName:(NSString *)name; //初始化可失败
+- (nullable NSString *)tellMeSomething; //返回值可为空
+@end
+
+NS_ASSUME_NONNULL_END</code></pre><p>对应Swift映射</p>
+<pre><code>public class Robot : NSObject {
+  public var name: String { get }
+  public init?(name: String)
+  public func tellMeSomething() -&gt; String?
+}</code></pre><h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a href="https://useyourloaf.com/blog/using-nullable-to-annotate-objective-c/" target="_blank" rel="noopener">Using nullable to annotate Objective-C code</a><br><a href="https://developer.apple.com/swift/blog/?id=25" target="_blank" rel="noopener">Nullability and Objective-C - Swift Blog - Apple Developer</a><br><a href="https://blog.csdn.net/txz_gray/article/details/54406298" target="_blank" rel="noopener">Objective-C中nullable、__nullable、_Nullable、_Nonnull的用法 - txz_gray的博客 - CSDN博客</a><br><a href="https://www.jianshu.com/p/2ea9c3f737ea" target="_blank" rel="noopener">关于OC中的nil, NULL详解 - 简书</a><br><a href="https://www.jianshu.com/p/742c6af3afae" target="_blank" rel="noopener">Swift和Objective-C混编 - 简书</a><br><a href="https://blog.csdn.net/yingBi2014/article/details/80093102" target="_blank" rel="noopener">Swift项目中使用OC混编—创建桥接文件和使用Cocoapods设置User Header Search Paths - 硬币2014 - CSDN博客</a><br><a href="https://www.jianshu.com/p/0646f064d27c" target="_blank" rel="noopener">如何在 Swift 项目中使用 OC 的第三方开源库 - 简书</a><br><a href="https://blog.csdn.net/top_roboo/article/details/50250785" target="_blank" rel="noopener">https://blog.csdn.net/top_roboo/article/details/50250785</a></p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            
+              <p>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/iOS">iOS</a>
+                  &nbsp;
+                
+              </p>
+            
+            <p>
+              <i class="iconfont icon-tag"></i>
+              
+                <a class="hover-with-bg" href="/tags/iOS">iOS</a>
+              
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+  <script src="/js/lazyload.js" ></script>
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Swift Objective-C 桥接&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script>
+    if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent) || (/Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent))) {
+      $("#background").css("background-attachment", "scroll");
+    }
+  </script>
+
+</body>
+</html>
